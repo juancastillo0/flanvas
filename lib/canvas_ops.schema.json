@@ -1,0 +1,191 @@
+{
+  "type": "object",
+  "properties": {
+    "ops": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/canvasOp"
+      }
+    }
+  },
+  "definitions": {
+    "offset": {
+      "type": "object",
+      "required": ["dx", "dy"],
+      "properties": {
+        "dx": {
+          "type": "integer"
+        },
+        "dy": {
+          "type": "integer"
+        }
+      }
+    },
+    "rectangle": {
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        }
+      }
+    },
+    "canvasOp": {
+      "type": "object",
+      "required": ["op"],
+      "oneOf": [
+        {
+          "properties": {
+            "op": {
+              "const": "arc"
+            },
+            "rect": {
+              "$ref": "#/definitions/rectangle"
+            },
+            "startAngle": {
+              "type": "number"
+            },
+            "sweepAngle": {
+              "type": "number"
+            },
+            "useCenter": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "circle"
+            },
+            "c": {
+              "$ref": "#/definitions/offset"
+            },
+            "radius": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "line"
+            },
+            "p1": {
+              "$ref": "#/definitions/offset"
+            },
+            "p2": {
+              "$ref": "#/definitions/offset"
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "rect"
+            },
+            "rect": {
+              "$ref": "#/definitions/rectangle"
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "points"
+            },
+            "points": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/offset" }
+            },
+            "pointMode": {
+              "type": "string",
+              "enum": ["points", "lines", "polygon"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "color"
+            },
+            "color": {
+              "type": "string",
+              "format": "color"
+            },
+            "blendMode": {
+              "type": "string",
+              "enum": [
+                "clear",
+                "src",
+                "dst",
+                "srcOver",
+                "dstOver",
+                "srcIn",
+                "dstIn",
+                "srcOut",
+                "dstOut",
+                "srcATop",
+                "dstATop",
+                "xor",
+                "plus",
+                "modulate",
+                "screen",
+                "overlay",
+                "darken",
+                "lighten",
+                "colorDodge",
+                "colorBurn",
+                "hardLight",
+                "softLight",
+                "difference",
+                "exclusion",
+                "multiply",
+                "hue",
+                "saturation",
+                "color",
+                "luminosity"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "rotate"
+            },
+            "radians": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "transform"
+            },
+            "kind": {
+              "type": "string",
+              "enum": ["scale", "skew", "translate"]
+            },
+            "dx": {
+              "type": "number"
+            },
+            "dy": {
+              "type": "number"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
