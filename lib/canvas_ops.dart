@@ -1,10 +1,21 @@
 import 'dart:ui';
 
+import 'package:flanvas/utils.dart';
+
 sealed class CanvasOp {
   const CanvasOp();
   Map<String, Object?> toJson();
   String toSvg();
   bool get isGroup => false;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! CanvasOp) return false;
+    return jsonEqual(toJson(), other.toJson());
+  }
+
+  @override
+  int get hashCode => Object.hashAll(jsonEntries(toJson())!);
 
   factory CanvasOp.fromJson(Map<String, Object?> json) {
     return switch (json['op'] as String) {
@@ -19,6 +30,11 @@ sealed class CanvasOp {
       _ => throw Exception('CanvasOp.fromJson no "op" found $json'),
     };
   }
+}
+
+sealed class TransformCanvasOp extends CanvasOp {
+  @override
+  bool get isGroup => true;
 }
 
 class ArcOp extends CanvasOp {
@@ -55,7 +71,7 @@ class ArcOp extends CanvasOp {
       '<path d="A ${rect.width} ${rect.height} $startAngle'
       ' ${useCenter ? 1 : 0} 1 ${rect.left} ${rect.top}"/>';
   @override
-  String toString() => 'ArcOp${toJson().toString()}';
+  String toString() => 'ArcOp${toJson()}';
 }
 
 class CircleOp extends CanvasOp {
@@ -78,7 +94,7 @@ class CircleOp extends CanvasOp {
   @override
   String toSvg() => '<circle dx="${c.dx}" dy="${c.dy}" r="$radius"/>';
   @override
-  String toString() => 'CircleOp${toJson().toString()}';
+  String toString() => 'CircleOp${toJson()}';
 }
 
 class LineOp extends CanvasOp {
@@ -102,7 +118,7 @@ class LineOp extends CanvasOp {
   String toSvg() =>
       '<line x1="${p1.dx}" x2="${p2.dx}" y1="${p1.dy}" y2="${p2.dy}"/>';
   @override
-  String toString() => 'LineOp${toJson().toString()}';
+  String toString() => 'LineOp${toJson()}';
 }
 
 class RectOp extends CanvasOp {
@@ -123,7 +139,7 @@ class RectOp extends CanvasOp {
   String toSvg() =>
       '<rect x="${rect.left}" y="${rect.top}" width="${rect.width}" height="${rect.height}"/>';
   @override
-  String toString() => 'RectOp${toJson().toString()}';
+  String toString() => 'RectOp${toJson()}';
 }
 
 class PointsOp extends CanvasOp {
@@ -156,12 +172,12 @@ class PointsOp extends CanvasOp {
   }
 
   @override
-  String toString() => 'PointsOp${toJson().toString()}';
+  String toString() => 'PointsOp${toJson()}';
 }
 
 String colorHex(Color color) => color.toARGB32().toRadixString(16);
 
-class ColorOp extends CanvasOp {
+class ColorOp extends TransformCanvasOp {
   final Color color;
   final BlendMode blendMode;
 
@@ -184,14 +200,12 @@ class ColorOp extends CanvasOp {
   };
   @override
   String toSvg() => '<g fill="#${colorHex(color)}">';
-  @override
-  bool get isGroup => true;
 
   @override
-  String toString() => 'ColorOp${toJson().toString()}';
+  String toString() => 'ColorOp${toJson()}';
 }
 
-class RotateOp extends CanvasOp {
+class RotateOp extends TransformCanvasOp {
   final double radians;
 
   RotateOp({required this.radians});
@@ -204,14 +218,13 @@ class RotateOp extends CanvasOp {
   /// <g transform="rotate(2)"></g>
   @override
   String toSvg() => '<g transform="rotate($radians)">';
-  @override
-  bool get isGroup => true;
 
   @override
-  String toString() => 'RotateOp${toJson().toString()}';
+  String toString() => 'RotateOp${toJson()}';
 }
 
-class AxisTransformOp extends CanvasOp {
+class AxisTransformOp extends TransformCanvasOp {
+  // TODO: flip?
   final AxisTransformKind kind;
   final double dx;
   final double dy;
@@ -238,9 +251,7 @@ class AxisTransformOp extends CanvasOp {
     AxisTransformKind.translate => '<g transform="translate($dx,$dy)">',
   };
   @override
-  bool get isGroup => true;
-  @override
-  String toString() => 'AxisTransformOp${toJson().toString()}';
+  String toString() => 'AxisTransformOp${toJson()}';
 }
 
 enum AxisTransformKind { scale, skew, translate }
