@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flanvas/canvas_ops.dart';
+import 'package:flanvas/utils.dart';
 
 Future<Uint8List> spriteFromCanvas(
   void Function(Canvas canvas) draw, {
@@ -27,7 +28,7 @@ String opsToSvg(List<CanvasOp> ops, Size size) {
   for (final _ in Iterable<int>.generate(groups)) {
     svgList.add('  ' * --groups + '<g/>');
   }
-  return '<svg viewBox="0 0 ${size.width} ${size.height}">'
+  return '<svg viewBox="0 0 ${size.width.str} ${size.height.str}">'
       '\n${svgList.join('\n')}\n</svg>';
 }
 
@@ -42,9 +43,9 @@ String flutterCode(CanvasOp op) {
   switch (op) {
     case final ArcOp a:
       // TOOD: print Rect.fromLTWH
-      return 'canvas.drawArc(${a.rect}, ${a.startAngle}, ${a.sweepAngle}, ${a.useCenter}, paint);';
+      return 'canvas.drawArc(${a.rect}, ${a.startAngle.str}, ${a.sweepAngle.str}, ${a.useCenter}, paint);';
     case final CircleOp a:
-      return 'canvas.drawCircle(${a.c}, ${a.radius}, paint);';
+      return 'canvas.drawCircle(${a.c}, ${a.radius.str}, paint);';
     case final LineOp a:
       return 'canvas.drawLine(${a.p1}, ${a.p2}, paint);';
     case final RectOp a:
@@ -57,12 +58,13 @@ paint = Paint.from(paint)
   ..color = ${a.color}
   ..blendMode = ${a.blendMode};''';
     case final RotateOp a:
-      return 'canvas.rotate(${a.radians});';
+      return 'canvas.rotate(${a.radians.str});';
     case final AxisTransformOp a:
       return (switch (a.kind) {
-        AxisTransformKind.scale => 'canvas.scale(${a.dx}, ${a.dy});',
-        AxisTransformKind.skew => 'canvas.skew(${a.dx}, ${a.dy});',
-        AxisTransformKind.translate => 'canvas.translate(${a.dx}, ${a.dy});',
+        AxisTransformKind.scale => 'canvas.scale(${a.dx.str}, ${a.dy.str});',
+        AxisTransformKind.skew => 'canvas.skew(${a.dx.str}, ${a.dy.str});',
+        AxisTransformKind.translate =>
+          'canvas.translate(${a.dx.str}, ${a.dy.str});',
       });
   }
 }

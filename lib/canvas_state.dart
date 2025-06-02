@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flanvas/canvas_logic.dart';
 import 'package:flanvas/canvas_ops.dart';
 import 'package:flanvas/state_event.dart';
+import 'package:flanvas/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -23,7 +24,11 @@ class FlanvasState extends ChangeNotifier {
   Uint8List? image;
   List<CanvasOp> ops = [];
   Size size = Size(500, 500);
-  final paint = Paint()..color = Colors.black;
+  final paint =
+      Paint()
+        ..color = Colors.black
+        ..strokeWidth = 5
+        ..style = PaintingStyle.fill;
   late String svg = opsToSvg(ops, size);
 
   final availableColors = [
@@ -50,7 +55,7 @@ class FlanvasState extends ChangeNotifier {
     Colors.blueGrey.shade500,
   ];
 
-  final selectedPaint = Paint()..color = Colors.black;
+  late Paint selectedPaint = paint;
   CanvasOp? selectedShapeBase;
   CanvasOp? selectedShape;
   List<Offset> selectedShapeTaps = [];
@@ -63,6 +68,7 @@ class FlanvasState extends ChangeNotifier {
   int eventsStackIndex = -1;
 
   int gridSpace = 32;
+  double zoom = 1;
   // paint, color, transform, group, delete, reorder, select
 
   /// [{"op":"circle","c":{"dx":120.0,"dy":50.0},"radius":6.0},{"op":"color","color":"72849231","blendMode":"srcOver"},{"op":"points","points":[{"dx":60.0,"dy":30.0},{"dx":100.0,"dy":40.0},{"dx":120.0,"dy":100.0},{"dx":20.0,"dy":100.0}],"pointMode":"polygon"}]
@@ -161,10 +167,7 @@ class FlanvasState extends ChangeNotifier {
 
   void onInteractCanvas(Offset t_, {required bool isTap}) {
     if (selectedShape == null || selectedShapeTaps.isEmpty && !isTap) return;
-    final t = Offset(
-      (t_.dx * 10).roundToDouble() / 10,
-      (t_.dy * 10).roundToDouble() / 10,
-    );
+    final t = Offset(t_.dx.roundPrecision(1), t_.dy.roundPrecision(1));
 
     bool add = false;
     switch (selectedShape!) {
@@ -174,7 +177,7 @@ class FlanvasState extends ChangeNotifier {
         } else {
           selectedShape = CircleOp(
             c: selectedShapeTaps.first,
-            radius: (selectedShapeTaps.first - t).distance,
+            radius: (selectedShapeTaps.first - t).distance.roundPrecision(1),
           );
           add = true;
         }
@@ -226,7 +229,7 @@ class FlanvasState extends ChangeNotifier {
           final d = selectedShapeTaps.first - t;
           selectedShape = ArcOp(
             rect: c.rect,
-            startAngle: math.atan2(d.dy, d.dx),
+            startAngle: math.atan2(d.dy, d.dx).roundPrecision(1),
             sweepAngle: 1,
             useCenter: c.useCenter,
           );
@@ -235,7 +238,7 @@ class FlanvasState extends ChangeNotifier {
           selectedShape = ArcOp(
             rect: c.rect,
             startAngle: c.startAngle,
-            sweepAngle: math.atan2(d.dy, d.dx),
+            sweepAngle: math.atan2(d.dy, d.dx).roundPrecision(1),
             useCenter: c.useCenter,
           );
           add = true;
@@ -243,7 +246,7 @@ class FlanvasState extends ChangeNotifier {
       case PointsOp c:
         selectedShape = PointsOp(
           pointMode: c.pointMode,
-          points: [...c.points, t],
+          points: [...selectedShapeTaps, t],
         );
       case ColorOp():
         // TODO: Handle this case.
@@ -253,7 +256,9 @@ class FlanvasState extends ChangeNotifier {
           selectedShape = RotateOp(radians: 0);
         } else {
           final d = selectedShapeTaps.first - t;
-          selectedShape = RotateOp(radians: math.atan2(d.dy, d.dx));
+          selectedShape = RotateOp(
+            radians: math.atan2(d.dy, d.dx).roundPrecision(1),
+          );
           add = true;
         }
       case AxisTransformOp c:
@@ -317,16 +322,33 @@ class FlanvasState extends ChangeNotifier {
   }
 
   void onKeyEvent(KeyEvent value) {
-    if (!RawKeyboard.instance.keysPressed.any(
-      LogicalKeyboardKey.expandSynonyms({
-        LogicalKeyboardKey.control,
-        LogicalKeyboardKey.meta,
-      }).contains,
-    )) {
+    final noCtrl = {
+      LogicalKeyboardKey.escape,
+      LogicalKeyboardKey.enter,
+      LogicalKeyboardKey.delete,
+    }.contains(value.logicalKey);
+    if (!noCtrl &&
+        !RawKeyboard.instance.keysPressed.any(
+          LogicalKeyboardKey.expandSynonyms({
+            LogicalKeyboardKey.control,
+            LogicalKeyboardKey.meta,
+          }).contains,
+        )) {
       return;
     }
 
     switch (value.logicalKey) {
+      case LogicalKeyboardKey.escape:
+        if (selectedShapeBase != null) selectShape(selectedShapeBase!);
+      case LogicalKeyboardKey.enter:
+        // TODO: add points
+        if (selectedShapeBase != null) selectShape(selectedShapeBase!);
+      case LogicalKeyboardKey.delete:
+        if (selectedOps.isNotEmpty) {
+          apply(RemoveOpEv.fromList(selectedOps));
+        } else if (selectedShapeBase != null) {
+          selectShape(selectedShapeBase!);
+        }
       case LogicalKeyboardKey.keyC:
         if (selectedOps.isEmpty) return;
         copiedOps = [...selectedOps];
@@ -348,5 +370,30 @@ class FlanvasState extends ChangeNotifier {
           undo();
         }
     }
+  }
+
+  void changePaint({
+    PaintingStyle? style,
+    double? strokeWidth,
+    StrokeCap? strokeCap,
+  }) {
+    selectedPaint =
+        Paint.from(selectedPaint)
+          ..style = style ?? selectedPaint.style
+          ..strokeWidth = strokeWidth ?? selectedPaint.strokeWidth
+          ..strokeCap = strokeCap ?? selectedPaint.strokeCap;
+    notifyListeners();
+  }
+
+  void updateZoom(double param0) {
+    if (param0 <= 0) return;
+    zoom = param0;
+    notifyListeners();
+  }
+
+  void updateGrid(int v) {
+    if (v < 0) return;
+    gridSpace = v;
+    notifyListeners();
   }
 }

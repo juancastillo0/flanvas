@@ -18,40 +18,163 @@ class CanvasOutputWidget extends StatelessWidget {
       children: [
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
           children: [
-            Text('Size:', style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 75,
-              child: TextFormField(initialValue: state.size.width.toString()),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Size:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 65,
+                  child: TextFormField(
+                    initialValue: state.size.width.round().toString(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text('x'),
+                ),
+                SizedBox(
+                  width: 65,
+                  child: TextFormField(
+                    initialValue: state.size.height.round().toString(),
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text('x'),
-            ),
-            SizedBox(
-              width: 75,
-              child: TextFormField(initialValue: state.size.height.toString()),
-            ),
-            const SizedBox(width: 6),
 
             ///
-            Icon(Icons.grid_4x4, size: 22),
-            Text('Grid:', style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 50,
-              child: TextFormField(initialValue: state.gridSpace.toString()),
+            ///
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.grid_4x4, size: 22),
+                Text('Grid:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 50,
+                  child: TextFormField(
+                    initialValue: state.gridSpace.toString(),
+                    onChanged: (value) {
+                      final v = int.tryParse(value);
+                      if (v != null) state.updateGrid(v);
+                    },
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 6),
 
             ///
-            Icon(Icons.zoom_in, size: 24),
-            Text('Zoom:', style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 50,
-              child: TextFormField(initialValue: state.gridSpace.toString()),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.zoom_in, size: 24),
+                Text('Zoom:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 50,
+                  child: TextFormField(
+                    initialValue: state.zoom.toString(),
+                    onChanged: (value) {
+                      final v = double.tryParse(value);
+                      if (v != null && v > 0) state.updateZoom(v);
+                    },
+                  ),
+                ),
+                Column(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        state.updateZoom(state.zoom + 0.1);
+                      },
+                      child: Icon(Icons.arrow_drop_up, size: 16),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        state.updateZoom(state.zoom - 0.1);
+                      },
+                      child: Icon(Icons.arrow_drop_down, size: 16),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.draw, size: 24),
+                Text('Stroke:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 50,
+                  child: TextFormField(
+                    initialValue: state.selectedPaint.strokeWidth.toString(),
+                    onChanged: (value) {
+                      final v = double.tryParse(value);
+                      if (v != null && v > 0) state.changePaint(strokeWidth: v);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cable_sharp, size: 24),
+                Text('Cap:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                ToggleButtons(
+                  isSelected: [false, false, false]
+                    ..[state.selectedPaint.strokeCap.index] = true,
+                  borderRadius: BorderRadius.circular(10),
+                  constraints: BoxConstraints.tightFor(),
+                  onPressed:
+                      (index) =>
+                          state.changePaint(strokeCap: StrokeCap.values[index]),
+                  children:
+                      StrokeCap.values
+                          .map(
+                            (c) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                                vertical: 5,
+                              ),
+                              child: Text(c.name),
+                            ),
+                          )
+                          .toList(),
+                ),
+              ],
+            ),
+
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  state.selectedPaint.style == PaintingStyle.fill
+                      ? Icons.circle
+                      : Icons.circle_outlined,
+                  size: 24,
+                ),
+                const SizedBox(width: 2),
+                Text('Fill:', style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 50,
+                  child: Checkbox(
+                    value: state.selectedPaint.style == PaintingStyle.fill,
+                    onChanged:
+                        (v) => state.changePaint(
+                          style:
+                              state.selectedPaint.style == PaintingStyle.fill
+                                  ? PaintingStyle.stroke
+                                  : PaintingStyle.fill,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -189,6 +312,7 @@ class OpsPainter extends CustomPainter {
     Paint p2 = paintConfig;
     Paint p = paintConfig;
     List<TransformCanvasOp>? transforms;
+    canvas.save();
     for (final op in ops) {
       List<TransformCanvasOp>? tl = state.transforms[op];
       if (state.selectedShape is TransformCanvasOp &&
@@ -212,7 +336,8 @@ class OpsPainter extends CustomPainter {
       transforms = tl;
     }
     if (transforms != null) canvas.restore();
-    if (gridSpace != null) {
+    canvas.restore();
+    if (gridSpace != null && gridSpace! > 0) {
       paintGrid(canvas, size, gridSpace!);
     }
   }

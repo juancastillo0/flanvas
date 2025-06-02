@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flanvas/utils.dart';
 import 'package:flanvas/canvas_ops.dart';
 import 'package:flanvas/canvas_state.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,7 @@ class CanvasFormWidget extends StatelessWidget {
                 (s.b, c.b),
                 (s.g, c.g),
                 (s.r, c.r),
-              ].every((e) => (e.$1 - e.$2).abs() < 0.000001);
+              ].every((e) => e.$1.equalDouble(e.$2));
               return InkWell(
                 onTap:
                     isSelected
@@ -235,10 +236,7 @@ class CanvasFormWidget extends StatelessWidget {
                             state.selectOp(op);
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 2,
-                              horizontal: 10,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               color:
                                   selectedOps.contains(op)
@@ -253,10 +251,11 @@ class CanvasFormWidget extends StatelessWidget {
                                 IconButton(
                                   onPressed:
                                       () => RemoveOpEv(op: op).apply(state),
-                                  icon: Icon(Icons.delete),
+                                  icon: Icon(Icons.delete, size: 18),
                                   iconSize: 18,
+                                  constraints: BoxConstraints.tightFor(),
                                 ),
-                                Icon(Icons.drag_handle),
+                                Icon(Icons.drag_handle, size: 18),
                               ],
                             ),
                           ),

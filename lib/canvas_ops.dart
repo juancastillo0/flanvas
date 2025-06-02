@@ -66,10 +66,11 @@ class ArcOp extends CanvasOp {
   };
 
   /// A rx ry x-axis-rotation large-arc-flag sweep-flag x y
+  /// // TODO: sweepAngle
   @override
   String toSvg() =>
-      '<path d="A ${rect.width} ${rect.height} $startAngle'
-      ' ${useCenter ? 1 : 0} 1 ${rect.left} ${rect.top}"/>';
+      '<path d="A ${rect.width.str} ${rect.height.str} ${startAngle.str}'
+      ' ${useCenter ? 1 : 0} 1 ${rect.left.str} ${rect.top.str}"/>';
   @override
   String toString() => 'ArcOp${toJson()}';
 }
@@ -92,7 +93,8 @@ class CircleOp extends CanvasOp {
 
   /// <circle cx="25" cy="75" r="20"/>
   @override
-  String toSvg() => '<circle dx="${c.dx}" dy="${c.dy}" r="$radius"/>';
+  String toSvg() =>
+      '<circle dx="${c.dx.str}" dy="${c.dy.str}" r="${radius.str}"/>';
   @override
   String toString() => 'CircleOp${toJson()}';
 }
@@ -116,7 +118,7 @@ class LineOp extends CanvasOp {
   /// <line x1="10" x2="50" y1="110" y2="150" stroke="black" stroke-width="5"/>
   @override
   String toSvg() =>
-      '<line x1="${p1.dx}" x2="${p2.dx}" y1="${p1.dy}" y2="${p2.dy}"/>';
+      '<line x1="${p1.dx.str}" x2="${p2.dx.str}" y1="${p1.dy.str}" y2="${p2.dy.str}"/>';
   @override
   String toString() => 'LineOp${toJson()}';
 }
@@ -137,7 +139,8 @@ class RectOp extends CanvasOp {
   /// <rect x="60" y="10" rx="10" ry="10" width="30" height="30"/>
   @override
   String toSvg() =>
-      '<rect x="${rect.left}" y="${rect.top}" width="${rect.width}" height="${rect.height}"/>';
+      '<rect x="${rect.left.str}" y="${rect.top.str}"'
+      ' width="${rect.width.str}" height="${rect.height.str}"/>';
   @override
   String toString() => 'RectOp${toJson()}';
 }
@@ -167,7 +170,7 @@ class PointsOp extends CanvasOp {
   /// <polyline points="60, 110 65, 120 70, 115 75, 130 80, 125 85, 140 90, 135 95, 150 100, 145"/>
   @override
   String toSvg() {
-    String allPoints = points.map((p) => '${p.dx},${p.dy}').join(' ');
+    String allPoints = points.map((p) => '${p.dx.str},${p.dy.str}').join(' ');
     return '<${pointMode == PointMode.lines ? 'polyline' : 'polygon'} points="$allPoints"/>';
   }
 
@@ -217,7 +220,7 @@ class RotateOp extends TransformCanvasOp {
 
   /// <g transform="rotate(2)"></g>
   @override
-  String toSvg() => '<g transform="rotate($radians)">';
+  String toSvg() => '<g transform="rotate(${radians.str})">';
 
   @override
   String toString() => 'RotateOp${toJson()}';
@@ -246,9 +249,10 @@ class AxisTransformOp extends TransformCanvasOp {
   };
   @override
   String toSvg() => switch (kind) {
-    AxisTransformKind.scale => '<g transform="scale($dx,$dy)">',
-    AxisTransformKind.skew => '<g transform="skew($dx,$dy)">',
-    AxisTransformKind.translate => '<g transform="translate($dx,$dy)">',
+    AxisTransformKind.scale => '<g transform="scale(${dx.str},${dy.str})">',
+    AxisTransformKind.skew => '<g transform="skew(${dx.str},${dy.str})">',
+    AxisTransformKind.translate =>
+      '<g transform="translate(${dx.str},${dy.str})">',
   };
   @override
   String toString() => 'AxisTransformOp${toJson()}';
